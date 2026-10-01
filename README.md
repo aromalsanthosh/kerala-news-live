@@ -35,10 +35,14 @@ Edit the `CHANNELS` array near the top of the `<script>` block in `index.html`:
 
 ```js
 const CHANNELS = [
-  { id: "VIDEO_OR_LIVE_ID", name: "Channel Name" },
-  // use "live_stream?channel=CHANNEL_ID" for an always-live channel URL
+  { id: "VIDEO_OR_LIVE_ID", channel: "CHANNEL_ID", name: "Channel Name" },
+  // id: the channel's current live video ID (or "live_stream?channel=CHANNEL_ID")
+  // channel: optional; if the video errors (stream ended/removed) the tile
+  //          automatically switches to that channel's current live stream
 ];
 ```
+
+Channels periodically end a live stream and start a new one with a new video ID. To find the current ID, open `https://www.youtube.com/@<handle>/live` and copy the `v=` value from the URL.
 
 ## Notes
 

@@ -226,19 +226,28 @@
 
 <script>
   // Edit this list to change channels/videos.
-  // Use a YouTube video ID, or for a live channel use "live_stream?channel=CHANNEL_ID"
+  // id: YouTube video ID of the channel's current live stream (or "live_stream?channel=CHANNEL_ID").
+  // channel: YouTube channel ID — if the video errors out (stream ended/removed),
+  //          the tile falls back to that channel's current live stream.
   const CHANNELS = [
-    { id: "1wECsnGZcfc", name: "24" },
-    { id: "s0LLVQeMmtU", name: "Asianet News" },
-    { id: "nObUcHKZEGY", name: "Reporter" },
-    { id: "HRvY9DoJ_qI", name: "Big TV" },
-    { id: "tgBTspqA5nY", name: "Manorama" },
-    { id: "P00SyV-yvfU", name: "Mathrubhumi" },
-    { id: "T9Ol2JHqKlM", name: "Janam" },
-    { id: "-8d8-c0yvyU", name: "Media One" },
-    { id: "yiiqRHY1Bl8", name: "Kairali" },
+    { id: "1wECsnGZcfc", channel: "UCup3etEdjyF1L3sRbU-rKLw", name: "24" },
+    { id: "s0LLVQeMmtU", channel: "UCf8w5m0YsRa8MHQ5bwSGmbw", name: "Asianet News" },
+    { id: "nObUcHKZEGY", channel: "UCFx1nseXKTc1Culiu3neeSQ", name: "Reporter" },
+    { id: "Az5I714Nk4M", channel: "UClFe5TPbW1MVrOPpbNHTDoQ", name: "Big TV" },
+    { id: "fK11h-5tykY", channel: "UCP0uG-mcMImgKnJz-VjJZmQ", name: "Manorama" },
+    { id: "RbxEftGN584", channel: "UCwXrBBZnIh2ER4lal6WbAHw", name: "Mathrubhumi" },
+    { id: "Fj1lWt7TtsM", channel: "UCNVkxRPqsBNejO6B9thG9Xw", name: "Janam" },
+    { id: "-8d8-c0yvyU", channel: "UC-f7r46JhYv78q5pGrO6ivA", name: "Media One" },
+    { id: "yiiqRHY1Bl8", channel: "UCnEvxaWfVL91XIYuyQRO5QA", name: "Kairali" },
   ];
   const VIDEOS = CHANNELS.map(c => c.id);
+  const EMBED_PARAMS = "enablejsapi=1&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
+
+  function embedUrl(v) {
+    return v.startsWith("live_stream")
+      ? `https://www.youtube.com/embed/${v}&${EMBED_PARAMS}`
+      : `https://www.youtube.com/embed/${v}?${EMBED_PARAMS}`;
+  }
 
   const grid = document.getElementById("grid");
   const audioButtonsContainer = document.getElementById("audioButtons");
@@ -263,12 +272,9 @@
     const tile = document.createElement("div");
     tile.className = "tile";
     tile.id = `tile-${i}`;
-    const src = v.startsWith("live_stream")
-      ? `https://www.youtube.com/embed/${v}&enablejsapi=1&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`
-      : `https://www.youtube.com/embed/${v}?enablejsapi=1&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`;
     const iframe = document.createElement("iframe");
     iframe.id = `player-${i}`;
-    iframe.src = src;
+    iframe.src = embedUrl(v);
     iframe.title = CHANNELS[i].name;
     iframe.loading = "lazy";
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
@@ -423,14 +429,44 @@
     });
   }
 
+  const usedFallback = new Set();
+
+  function createPlayer(i) {
+    new YT.Player(`player-${i}`, {
+      events: {
+        'onReady': (e) => {
+          players[i] = e.target;
+          if (i === activeAudioIndex) { e.target.unMute(); e.target.setVolume(100); }
+          else e.target.mute();
+          if (hidden.has(i)) e.target.pauseVideo();
+        },
+        // Pinned video unavailable (stream ended / removed) -> switch to the channel's live stream
+        'onError': () => fallbackToChannel(i)
+      }
+    });
+  }
+
+  function fallbackToChannel(i) {
+    const channel = CHANNELS[i].channel;
+    if (!channel || usedFallback.has(i)) return;
+    usedFallback.add(i);
+    players[i]?.destroy?.();
+    players[i] = undefined;
+    const iframe = document.createElement("iframe");
+    iframe.id = `player-${i}`;
+    iframe.src = embedUrl(`live_stream?channel=${channel}`);
+    iframe.title = CHANNELS[i].name;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    iframe.allowFullscreen = true;
+    const tile = document.getElementById(`tile-${i}`);
+    tile.querySelector("iframe")?.remove();
+    tile.appendChild(iframe);
+    createPlayer(i);
+  }
+
   window.onYouTubeIframeAPIReady = function() {
-    for (let i = 0; i < VIDEOS.length; i++) {
-      new YT.Player(`player-${i}`, {
-        events: {
-          'onReady': (e) => { players[i] = e.target; e.target.mute(); }
-        }
-      });
-    }
+    for (let i = 0; i < VIDEOS.length; i++) createPlayer(i);
   };
 
   document.addEventListener("keydown", (e) => {
