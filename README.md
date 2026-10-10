@@ -35,8 +35,8 @@ Edit the `CHANNELS` array near the top of the `<script>` block in `index.html`:
 
 ```js
 const CHANNELS = [
-  { id: "VIDEO_OR_LIVE_ID", name: "Channel Name" },
-  { id: "VIDEO_OR_LIVE_ID", name: "Optional Channel", hidden: true }, // starts hidden
+  { id: "VIDEO_OR_LIVE_ID", channel: "UC_CHANNEL_ID", name: "Channel Name" },
+  { id: "VIDEO_OR_LIVE_ID", channel: "UC_CHANNEL_ID", name: "Optional Channel", hidden: true }, // starts hidden
   // use "live_stream?channel=CHANNEL_ID" for an always-live channel URL
 ];
 ```
@@ -44,4 +44,5 @@ const CHANNELS = [
 ## Notes
 
 - Streams are embedded via the YouTube IFrame API; availability depends on each channel currently being live.
+- Live stream IDs expire when a channel restarts its stream. If a tile's video errors or its stream ends, it automatically switches to `embed/live_stream?channel=<channel>`, which resolves to the channel's current live stream. This isn't the default because YouTube's `live_stream` embed shows "Video unavailable" for some channels (e.g. ones running several live streams at once), so a known-good video ID is still preferred.
 - Autoplay policies require the page to start muted — that's why focus mode unmutes one at a time.

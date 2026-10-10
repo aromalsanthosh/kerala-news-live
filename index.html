@@ -228,17 +228,19 @@
   // Edit this list to change channels/videos.
   // Use a YouTube video ID, or for a live channel use "live_stream?channel=CHANNEL_ID"
   // Set hidden: true to start a channel hidden (enable it from the audio panel)
+  // channel: YouTube channel ID. If the video errors or its stream ends, the tile
+  // falls back to the channel's current live stream (embed/live_stream?channel=...)
   const CHANNELS = [
-    { id: "1wECsnGZcfc", name: "24" },
-    { id: "s0LLVQeMmtU", name: "Asianet News" },
-    { id: "nObUcHKZEGY", name: "Reporter" },
-    { id: "Az5I714Nk4M", name: "Big TV" },
-    { id: "tgBTspqA5nY", name: "Manorama" },
-    { id: "RbxEftGN584", name: "Mathrubhumi" },
-    { id: "T9Ol2JHqKlM", name: "Janam" },
-    { id: "-8d8-c0yvyU", name: "Media One" },
-    { id: "yiiqRHY1Bl8", name: "Kairali" },
-    { id: "K91rifR3BA0", name: "News Malayalam", hidden: true },
+    { id: "1wECsnGZcfc", channel: "UCup3etEdjyF1L3sRbU-rKLw", name: "24" },
+    { id: "s0LLVQeMmtU", channel: "UCf8w5m0YsRa8MHQ5bwSGmbw", name: "Asianet News" },
+    { id: "nObUcHKZEGY", channel: "UCFx1nseXKTc1Culiu3neeSQ", name: "Reporter" },
+    { id: "Az5I714Nk4M", channel: "UClFe5TPbW1MVrOPpbNHTDoQ", name: "Big TV" },
+    { id: "tgBTspqA5nY", channel: "UCP0uG-mcMImgKnJz-VjJZmQ", name: "Manorama" },
+    { id: "RbxEftGN584", channel: "UCwXrBBZnIh2ER4lal6WbAHw", name: "Mathrubhumi" },
+    { id: "T9Ol2JHqKlM", channel: "UCNVkxRPqsBNejO6B9thG9Xw", name: "Janam" },
+    { id: "-8d8-c0yvyU", channel: "UC-f7r46JhYv78q5pGrO6ivA", name: "Media One" },
+    { id: "yiiqRHY1Bl8", channel: "UCnEvxaWfVL91XIYuyQRO5QA", name: "Kairali" },
+    { id: "K91rifR3BA0", channel: "UCXp6JTdq7-WwBK09S7SzmxQ", name: "News Malayalam", hidden: true },
   ];
   const VIDEOS = CHANNELS.map(c => c.id);
 
@@ -251,6 +253,14 @@
   const panelStatus = document.getElementById("panelStatus");
 
   const players = [];
+  const usingChannelFallback = new Set();
+
+  function embedSrc(v, autoplay) {
+    const params = `enablejsapi=1&autoplay=${autoplay}&mute=1&playsinline=1&rel=0&modestbranding=1`;
+    return v.startsWith("live_stream")
+      ? `https://www.youtube.com/embed/${v}&${params}`
+      : `https://www.youtube.com/embed/${v}?${params}`;
+  }
   let activeAudioIndex = -1;
   let isPanelExpanded = true;
 
@@ -265,10 +275,7 @@
     const tile = document.createElement("div");
     tile.className = "tile";
     tile.id = `tile-${i}`;
-    const autoplay = CHANNELS[i].hidden ? 0 : 1;
-    const src = v.startsWith("live_stream")
-      ? `https://www.youtube.com/embed/${v}&enablejsapi=1&autoplay=${autoplay}&mute=1&playsinline=1&rel=0&modestbranding=1`
-      : `https://www.youtube.com/embed/${v}?enablejsapi=1&autoplay=${autoplay}&mute=1&playsinline=1&rel=0&modestbranding=1`;
+    const src = embedSrc(v, CHANNELS[i].hidden ? 0 : 1);
     const iframe = document.createElement("iframe");
     iframe.id = `player-${i}`;
     iframe.src = src;
@@ -427,18 +434,36 @@
     });
   }
 
+  function attachPlayer(i) {
+    new YT.Player(`player-${i}`, {
+      events: {
+        'onReady': (e) => {
+          players[i] = e.target;
+          if (i === activeAudioIndex) { e.target.unMute(); e.target.setVolume(100); }
+          else e.target.mute();
+          if (hidden.has(i)) e.target.pauseVideo();
+        },
+        // Video removed/unembeddable/recording unavailable
+        'onError': () => switchToChannelLive(i),
+        // A live stream that ends fires ENDED
+        'onStateChange': (e) => { if (e.data === YT.PlayerState.ENDED) switchToChannelLive(i); }
+      }
+    });
+  }
+
+  // Swap a tile to its channel's current live stream (once per tile)
+  function switchToChannelLive(i) {
+    const channel = CHANNELS[i].channel;
+    if (!channel || usingChannelFallback.has(i)) return;
+    usingChannelFallback.add(i);
+    players[i] = undefined;
+    const iframe = document.getElementById(`player-${i}`);
+    iframe.src = embedSrc(`live_stream?channel=${channel}`, hidden.has(i) ? 0 : 1);
+    attachPlayer(i);
+  }
+
   window.onYouTubeIframeAPIReady = function() {
-    for (let i = 0; i < VIDEOS.length; i++) {
-      new YT.Player(`player-${i}`, {
-        events: {
-          'onReady': (e) => {
-            players[i] = e.target;
-            e.target.mute();
-            if (hidden.has(i)) e.target.pauseVideo();
-          }
-        }
-      });
-    }
+    for (let i = 0; i < VIDEOS.length; i++) attachPlayer(i);
   };
 
   document.addEventListener("keydown", (e) => {
