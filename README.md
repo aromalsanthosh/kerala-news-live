@@ -14,6 +14,7 @@ Malayalam news coverage (especially during elections, breaking news, budgets, et
 - **Mute all** — press `0` or `M`, or use the "Mute All" button.
 - **Show / hide channels** — toggle individual channels with the 👁️ button, or use Show All / Hide All. Hidden streams are paused to save bandwidth.
 - **Collapsible audio panel** — floating control panel minimizes to a small speaker icon to stay out of the way.
+- **Movable audio panel** — drag the panel by its header (mouse or touch) to move it anywhere; it stays on screen and remembers its position.
 - **Keyboard shortcuts**
   - `1`–`9` → focus audio on channel N
   - `0` / `M` → mute all
@@ -35,8 +36,8 @@ Edit the `CHANNELS` array near the top of the `<script>` block in `index.html`:
 
 ```js
 const CHANNELS = [
-  { id: "VIDEO_OR_LIVE_ID", name: "Channel Name" },
-  { id: "VIDEO_OR_LIVE_ID", name: "Optional Channel", hidden: true }, // starts hidden
+  { id: "VIDEO_OR_LIVE_ID", channel: "UC_CHANNEL_ID", name: "Channel Name" },
+  { id: "VIDEO_OR_LIVE_ID", channel: "UC_CHANNEL_ID", name: "Optional Channel", hidden: true }, // starts hidden
   // use "live_stream?channel=CHANNEL_ID" for an always-live channel URL
 ];
 ```
@@ -44,4 +45,5 @@ const CHANNELS = [
 ## Notes
 
 - Streams are embedded via the YouTube IFrame API; availability depends on each channel currently being live.
+- Live stream IDs expire when a channel restarts its stream. If a tile's video errors or its stream ends, it automatically switches to `embed/live_stream?channel=<channel>`, which resolves to the channel's current live stream. This isn't the default because YouTube's `live_stream` embed shows "Video unavailable" for some channels (e.g. ones running several live streams at once), so a known-good video ID is still preferred.
 - Autoplay policies require the page to start muted — that's why focus mode unmutes one at a time.
