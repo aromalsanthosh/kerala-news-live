@@ -8,7 +8,7 @@ Malayalam news coverage (especially during elections, breaking news, budgets, et
 
 ## Features
 
-- **Multi-stream grid** — watch 9+ Malayalam news channels (24, Asianet, Reporter, Big TV, Manorama, Mathrubhumi, Janam, Media One, Kairali) concurrently.
+- **Multi-stream grid** — watch 9+ Malayalam news channels (24, Asianet, Reporter, Big TV, Manorama, Mathrubhumi, Janam, Media One, Kairali) concurrently, plus News Malayalam 24x7 (hidden by default — enable it with 👁️ and hide another channel to keep a 3×3 grid).
 - **Responsive auto-layout** — grid shape adapts to the number of visible tiles (1×1, 2×1, 2×2, 3×2, 3×3, 4×3, …) and fits the viewport with no scrolling on desktop/tablet; stacks vertically on mobile.
 - **Single-audio focus** — all streams start muted; click a channel (or press `1`–`9`) to unmute just that one. Active tile gets a green border.
 - **Mute all** — press `0` or `M`, or use the "Mute All" button.
@@ -36,6 +36,7 @@ Edit the `CHANNELS` array near the top of the `<script>` block in `index.html`:
 ```js
 const CHANNELS = [
   { id: "VIDEO_OR_LIVE_ID", name: "Channel Name" },
+  { id: "VIDEO_OR_LIVE_ID", name: "Optional Channel", hidden: true }, // starts hidden
   // use "live_stream?channel=CHANNEL_ID" for an always-live channel URL
 ];
 ```

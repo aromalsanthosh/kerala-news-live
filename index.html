@@ -227,16 +227,18 @@
 <script>
   // Edit this list to change channels/videos.
   // Use a YouTube video ID, or for a live channel use "live_stream?channel=CHANNEL_ID"
+  // Set hidden: true to start a channel hidden (enable it from the audio panel)
   const CHANNELS = [
     { id: "1wECsnGZcfc", name: "24" },
     { id: "s0LLVQeMmtU", name: "Asianet News" },
     { id: "nObUcHKZEGY", name: "Reporter" },
-    { id: "HRvY9DoJ_qI", name: "Big TV" },
+    { id: "Az5I714Nk4M", name: "Big TV" },
     { id: "tgBTspqA5nY", name: "Manorama" },
-    { id: "P00SyV-yvfU", name: "Mathrubhumi" },
+    { id: "RbxEftGN584", name: "Mathrubhumi" },
     { id: "T9Ol2JHqKlM", name: "Janam" },
     { id: "-8d8-c0yvyU", name: "Media One" },
     { id: "yiiqRHY1Bl8", name: "Kairali" },
+    { id: "K91rifR3BA0", name: "News Malayalam", hidden: true },
   ];
   const VIDEOS = CHANNELS.map(c => c.id);
 
@@ -263,9 +265,10 @@
     const tile = document.createElement("div");
     tile.className = "tile";
     tile.id = `tile-${i}`;
+    const autoplay = CHANNELS[i].hidden ? 0 : 1;
     const src = v.startsWith("live_stream")
-      ? `https://www.youtube.com/embed/${v}&enablejsapi=1&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`
-      : `https://www.youtube.com/embed/${v}?enablejsapi=1&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`;
+      ? `https://www.youtube.com/embed/${v}&enablejsapi=1&autoplay=${autoplay}&mute=1&playsinline=1&rel=0&modestbranding=1`
+      : `https://www.youtube.com/embed/${v}?enablejsapi=1&autoplay=${autoplay}&mute=1&playsinline=1&rel=0&modestbranding=1`;
     const iframe = document.createElement("iframe");
     iframe.id = `player-${i}`;
     iframe.src = src;
@@ -354,6 +357,7 @@
 
   // === Visibility / dynamic grid ===
   const hidden = new Set();
+  CHANNELS.forEach((c, i) => { if (c.hidden) hidden.add(i); });
 
   function computeGridShape(n) {
     // Returns {cols, rows} for n visible tiles
@@ -427,7 +431,11 @@
     for (let i = 0; i < VIDEOS.length; i++) {
       new YT.Player(`player-${i}`, {
         events: {
-          'onReady': (e) => { players[i] = e.target; e.target.mute(); }
+          'onReady': (e) => {
+            players[i] = e.target;
+            e.target.mute();
+            if (hidden.has(i)) e.target.pauseVideo();
+          }
         }
       });
     }
@@ -448,7 +456,8 @@
     if (key === "Escape" && isPanelExpanded) collapsePanel();
   });
 
-  // Initialize muted
+  // Apply default-hidden channels, then initialize muted
+  applyVisibility();
   setTimeout(() => setAudioFocus(-1), 2000);
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "186e0207f66f4589b3360b1bf72966b0"}'></script><!-- End Cloudflare Web Analytics -->
