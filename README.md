@@ -14,6 +14,7 @@ Malayalam news coverage (especially during elections, breaking news, budgets, et
 - **Mute all** — press `0` or `M`, or use the "Mute All" button.
 - **Show / hide channels** — toggle individual channels with the 👁️ button, or use Show All / Hide All. Hidden streams are paused to save bandwidth.
 - **Collapsible audio panel** — floating control panel minimizes to a small speaker icon to stay out of the way.
+- **Movable audio panel** — drag the panel by its header (mouse or touch) to move it anywhere; it stays on screen and remembers its position.
 - **Keyboard shortcuts**
   - `1`–`9` → focus audio on channel N
   - `0` / `M` → mute all

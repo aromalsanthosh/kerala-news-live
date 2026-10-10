@@ -89,6 +89,11 @@
     white-space:nowrap;
   }
   .panel-header:hover{ background:#2a2a3a; }
+  /* Drag the panel by its header */
+  .panel-header{ touch-action:none; user-select:none; -webkit-user-select:none; }
+  #audioPanel.dragging, #audioPanel.dragging *{ cursor:grabbing !important; }
+  /* Iframes would swallow pointer events mid-drag */
+  body.panel-pointer-down iframe{ pointer-events:none; }
   .panel-controls{
     display:flex;
     align-items:center;
@@ -340,19 +345,90 @@
     if (!isPanelExpanded) {
       isPanelExpanded = true;
       audioPanel.classList.add("expanded");
-      panelHeader.title = "Click speaker to minimize";
+      panelHeader.title = "Drag to move · click speaker to minimize";
     }
   }
   function collapsePanel() {
     if (isPanelExpanded) {
       isPanelExpanded = false;
       audioPanel.classList.remove("expanded");
-      panelHeader.title = "Click 🔊 to open audio controls";
+      panelHeader.title = "Drag to move · click 🔊 to open audio controls";
     }
   }
   function togglePanel() {
     if (isPanelExpanded) collapsePanel(); else expandPanel();
   }
+
+  // === Draggable panel ===
+  // Position is kept as right/top so expanding still grows leftwards.
+  const PANEL_POS_KEY = "audioPanelPos";
+  let drag = null;
+  let suppressClick = false;
+
+  function placePanel(right, top) {
+    const rect = audioPanel.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    right = Math.min(Math.max(0, right), Math.max(0, vw - rect.width));
+    top = Math.min(Math.max(0, top), Math.max(0, vh - rect.height));
+    audioPanel.style.right = `${right}px`;
+    audioPanel.style.top = `${top}px`;
+    return { right, top };
+  }
+  function clampPanel() {
+    const rect = audioPanel.getBoundingClientRect();
+    placePanel(document.documentElement.clientWidth - rect.right, rect.top);
+  }
+
+  panelHeader.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const rect = audioPanel.getBoundingClientRect();
+    drag = {
+      x: e.clientX, y: e.clientY, moved: false,
+      right: document.documentElement.clientWidth - rect.right, top: rect.top,
+    };
+    document.body.classList.add("panel-pointer-down");
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return; // small moves are clicks
+    drag.moved = true;
+    audioPanel.classList.add("dragging");
+    placePanel(drag.right - dx, drag.top + dy);
+  });
+  function endDrag() {
+    if (!drag) return;
+    if (drag.moved) {
+      audioPanel.classList.remove("dragging");
+      // Swallow the click that follows a drag so it doesn't toggle the panel
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 0);
+      try {
+        localStorage.setItem(PANEL_POS_KEY, JSON.stringify({
+          right: parseFloat(audioPanel.style.right), top: parseFloat(audioPanel.style.top),
+        }));
+      } catch (_) {}
+    }
+    drag = null;
+    document.body.classList.remove("panel-pointer-down");
+  }
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", endDrag);
+  audioPanel.addEventListener("click", (e) => {
+    if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; }
+  }, true);
+
+  // Keep the panel on screen when it resizes or the window does
+  audioPanel.addEventListener("transitionend", (e) => {
+    if (e.target === audioPanel && (e.propertyName === "width" || e.propertyName === "max-height")) clampPanel();
+  });
+  window.addEventListener("resize", clampPanel);
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(PANEL_POS_KEY));
+    if (saved && Number.isFinite(saved.right) && Number.isFinite(saved.top)) placePanel(saved.right, saved.top);
+  } catch (_) {}
 
   panelSpeaker.addEventListener("click", (e) => { e.stopPropagation(); expandPanel(); });
   panelMinimize.addEventListener("click", (e) => { e.stopPropagation(); collapsePanel(); });
