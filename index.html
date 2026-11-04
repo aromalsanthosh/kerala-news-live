@@ -162,7 +162,7 @@
     transition:background .15s,color .15s,transform .15s;
   }
   .icon-btn:hover{background:var(--row-hover);color:var(--text)}
-  .icon-btn:focus-visible,.ch:focus-visible,.panel-btn:focus-visible,.bmc-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .icon-btn:focus-visible,.ch:focus-visible,.panel-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .panel-minimize{display:none}
   #audioPanel.expanded .panel-minimize{display:flex}
   .panel-speaker{
@@ -241,23 +241,14 @@
   .panel-actions{display:flex;gap:6px}
   .panel-actions .panel-btn{height:32px;font-size:12px;font-weight:500;color:var(--muted)}
   .panel-actions .panel-btn:hover{color:var(--text)}
-  .bmc-link{
-    display:flex;align-items:center;justify-content:center;gap:8px;height:36px;border-radius:10px;
-    background:#ffdd00;color:#141414;font-size:12.5px;font-weight:700;text-decoration:none;
-    transition:filter .15s,transform .15s;
-  }
-  .bmc-link:hover{filter:brightness(1.06);transform:translateY(-1px)}
-  .bmc-link .icon{stroke-width:2.2}
   .shortcuts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;font-size:11px;color:var(--faint)}
   .shortcuts kbd{
     font:inherit;font-weight:600;color:var(--muted);
     padding:0 4px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
   }
-  .support-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .support-row .bmc-link,.upi-btn{font-size:12px;gap:6px;padding:0 8px;white-space:nowrap}
   .upi-btn{
-    display:flex;align-items:center;justify-content:center;height:36px;border-radius:10px;border:0;cursor:pointer;
-    font:inherit;font-size:12px;font-weight:700;color:#0f172a;background:#fff;
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:38px;border-radius:10px;border:0;cursor:pointer;
+    font:inherit;font-size:13px;font-weight:700;color:#0f172a;background:#fff;
     transition:filter .15s,transform .15s;
   }
   .upi-btn:hover{filter:brightness(.94);transform:translateY(-1px)}
@@ -321,7 +312,6 @@
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
-  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></symbol>
 </svg>
 <div id="audioPanel" class="expanded" role="region" aria-label="Audio controls">
   <div class="panel-header" id="panelHeader" title="Drag to move">
@@ -342,7 +332,7 @@
 <div class="upi-overlay" id="upiDialog" role="dialog" aria-modal="true" aria-labelledby="upiTitle" hidden>
   <div class="upi-card">
     <button class="icon-btn upi-close" id="upiClose" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
-    <h2 id="upiTitle">Support via UPI</h2>
+    <h2 id="upiTitle">Support the creator</h2>
     <p>Scan with any UPI app, or copy the UPI ID, to send any amount. Thank you!</p>
     <a class="upi-open" id="upiOpen" href="#">Open UPI app</a>
     <div class="upi-ios-apps" id="upiIosApps">
@@ -461,7 +451,7 @@
     channelList.appendChild(btn);
   }
 
-  // Footer: Show/Hide all, Buy Me a Coffee, shortcut hint
+  // Footer: Show/Hide all, UPI support, shortcut hint, credit
   const footer = document.createElement("div");
   footer.className = "panel-footer";
   const actions = document.createElement("div");
@@ -478,15 +468,6 @@
     applyVisibility();
   });
 
-  const BMC_URL = "https://buymeacoffee.com/aromalsanthosh";
-  const bmcLink = document.createElement("a");
-  bmcLink.className = "bmc-link";
-  bmcLink.href = BMC_URL;
-  bmcLink.target = "_blank";
-  bmcLink.rel = "noopener";
-  bmcLink.title = "Support this site on Buy Me a Coffee";
-  bmcLink.innerHTML = `<svg class="icon"><use href="#i-coffee"/></svg> Buy me a coffee`;
-
   // Pay via UPI (India): opens a dialog with QR, UPI ID and an app deep link.
   // If you change UPI_ID, regenerate upi-qr.svg with scripts/make_upi_qr.py.
   const UPI_ID = "aromalponmana@oksbi";
@@ -495,13 +476,8 @@
   const upiBtn = document.createElement("button");
   upiBtn.className = "upi-btn";
   upiBtn.type = "button";
-  upiBtn.title = "Pay via UPI (GPay, PhonePe, Paytm…)";
-  upiBtn.innerHTML = `<span class="rupee" aria-hidden="true">₹</span> Pay via UPI`;
-
-  const supportRow = document.createElement("div");
-  supportRow.className = "support-row";
-  supportRow.append(bmcLink, upiBtn);
-  bmcLink.addEventListener("click", (e) => e.stopPropagation());
+  upiBtn.title = "Support the creator via UPI (GPay, PhonePe, Paytm…)";
+  upiBtn.innerHTML = `<span class="rupee" aria-hidden="true">₹</span> Support via UPI`;
 
   const hint = document.createElement("div");
   hint.className = "shortcuts";
@@ -512,7 +488,7 @@
   credit.innerHTML = `Made with <span role="img" aria-label="love">❤️</span> by <a href="https://aromalsanthosh.com" target="_blank" rel="noopener">Aromal</a>`;
   credit.querySelector("a").addEventListener("click", (e) => e.stopPropagation());
 
-  footer.append(actions, supportRow, hint, credit);
+  footer.append(actions, upiBtn, hint, credit);
   audioButtonsContainer.appendChild(footer);
 
   // Mute All button at top
