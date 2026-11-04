@@ -1,0 +1,3 @@
+# Only the site itself is published; everything else in the repo stays private.
+*
+!index.html

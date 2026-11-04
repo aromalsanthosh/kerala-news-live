@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "live",
+  "compatibility_date": "2026-10-10",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  // Static site: serve files from the repo root, filtered by .assetsignore
+  "assets": { "directory": "." }
+}
