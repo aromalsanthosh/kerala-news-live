@@ -49,12 +49,15 @@
   "image": "https://news.aromalsanthosh.com/og-image.png"
 }
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
 <link rel="preconnect" href="https://www.youtube.com" />
 <link rel="preconnect" href="https://i.ytimg.com" />
 <link rel="preconnect" href="https://www.google.com" />
 <style>
   *,*::before,*::after{box-sizing:border-box}
-  html,body{margin:0;background:#000;color:#eee;font-family:system-ui,sans-serif;-webkit-text-size-adjust:100%}
+  html,body{margin:0;background:#000;color:#eee;font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
   .grid{
     display:grid;
     gap:2px;
@@ -79,8 +82,8 @@
     transition:border-color 0.2s;
   }
   .tile.active-audio{
-    border-color:#0f0;
-    box-shadow:0 0 0 2px #0f0 inset;
+    border-color:#22c55e;
+    box-shadow:0 0 0 2px #22c55e inset, 0 0 24px rgba(34,197,94,.35);
   }
   /* Tablet/desktop: fit grid exactly to viewport, no scroll */
   @media (min-width:700px){
@@ -97,186 +100,185 @@
   }
   .tile iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 
-  /* === Collapsible Audio Panel === */
+  /* === Audio panel === */
+  :root{
+    --panel-bg:rgba(15,16,22,.84);
+    --panel-border:rgba(255,255,255,.09);
+    --row-bg:rgba(255,255,255,.035);
+    --row-hover:rgba(255,255,255,.07);
+    --text:#eceef3;
+    --muted:#8b91a1;
+    --faint:#5d6272;
+    --accent:#22c55e;
+    --accent-soft:rgba(34,197,94,.14);
+    --accent-line:rgba(34,197,94,.45);
+  }
+  .icon{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
   #audioPanel{
-    position:fixed;
-    top:12px;
-    right:12px;
-    z-index:1000;
-    background:rgba(20,20,30,0.95);
-    border:1px solid #444;
-    border-radius:10px;
-    padding:8px;
-    width:44px;
-    max-height:100vh;
+    position:fixed;top:12px;right:12px;z-index:1000;
+    display:flex;flex-direction:column;
+    width:48px;max-height:48px;padding:6px;
+    color:var(--text);
+    background:var(--panel-bg);
+    -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+    border:1px solid var(--panel-border);
+    border-radius:24px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
     overflow:hidden;
-    transition:width 0.25s ease, padding 0.25s ease, max-height 0.25s ease;
-    box-shadow:0 4px 20px rgba(0,0,0,0.5);
-    display:flex;
-    flex-direction:column;
-    gap:6px;
+    font-size:13px;line-height:1.35;
+    transition:width .25s ease,max-height .25s ease,padding .25s ease,border-radius .25s ease;
   }
   #audioPanel.expanded{
-    width:min(280px,95vw);
-    padding:10px 12px;
-    max-height:min(400px,80vh);
-    overflow-y:auto;
+    width:min(300px,calc(100vw - 24px));
+    max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+    padding:8px;
+    border-radius:16px;
   }
+
+  /* Header (also the drag handle) */
   .panel-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    cursor:pointer;
-    padding:4px 6px;
-    border-radius:6px;
-    transition:background 0.15s;
-    white-space:nowrap;
+    display:flex;align-items:center;gap:8px;
+    padding:2px 2px 2px 4px;border-radius:12px;
+    cursor:grab;white-space:nowrap;flex-shrink:0;
+    touch-action:none;user-select:none;-webkit-user-select:none;
   }
-  .panel-header:hover{ background:#2a2a3a; }
-  /* Drag the panel by its header */
-  .panel-header{ touch-action:none; user-select:none; -webkit-user-select:none; }
-  #audioPanel.dragging, #audioPanel.dragging *{ cursor:grabbing !important; }
-  /* Iframes would swallow pointer events mid-drag */
-  body.panel-pointer-down iframe{ pointer-events:none; }
-  .panel-controls{
-    display:flex;
-    align-items:center;
-    gap:4px;
-    flex-shrink:0;
+  #audioPanel:not(.expanded) .panel-header{padding:0}
+  #audioPanel.dragging,#audioPanel.dragging *{cursor:grabbing !important}
+  body.panel-pointer-down iframe{pointer-events:none}
+  .panel-grip{color:var(--faint);display:none}
+  .panel-grip .icon{width:14px;height:14px;fill:currentColor;stroke:none}
+  .panel-heading{display:none;flex:1;min-width:0;flex-direction:column;gap:1px}
+  #audioPanel.expanded .panel-grip{display:flex}
+  #audioPanel.expanded .panel-heading{display:flex}
+  .panel-title{font-size:13px;font-weight:600;letter-spacing:-.01em}
+  .panel-status{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+  .panel-status b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .panel-controls{display:flex;align-items:center;gap:4px;flex-shrink:0}
+  .icon-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:32px;padding:0;border:0;border-radius:10px;
+    background:transparent;color:var(--muted);cursor:pointer;
+    transition:background .15s,color .15s,transform .15s;
   }
+  .icon-btn:hover{background:var(--row-hover);color:var(--text)}
+  .icon-btn:focus-visible,.ch:focus-visible,.panel-btn:focus-visible,.bmc-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .panel-minimize{display:none}
+  #audioPanel.expanded .panel-minimize{display:flex}
   .panel-speaker{
-    width:28px;height:28px;
-    border-radius:6px;
-    background:#0f0;
-    color:#000;
-    border:none;
-    font-size:14px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-shrink:0;
-    transition:transform 0.15s, background 0.15s;
+    width:36px;height:36px;border-radius:18px;
+    background:rgba(255,255,255,.08);color:var(--text);
   }
-  .panel-speaker:hover{ transform:scale(1.05); background:#0c0; }
-  .panel-minimize{
-    width:28px;height:28px;
-    border-radius:6px;
-    background:#444;
-    color:#fff;
-    border:none;
-    font-size:14px;
-    cursor:pointer;
-    align-items:center;
-    justify-content:center;
-    flex-shrink:0;
-    transition:transform 0.15s, background 0.15s;
-    display:none;
+  .panel-speaker:hover{background:rgba(255,255,255,.14);transform:scale(1.04)}
+  #audioPanel.expanded .panel-speaker{display:none}
+  #audioPanel.playing .panel-speaker{background:var(--accent);color:#04140a;box-shadow:0 0 0 4px rgba(34,197,94,.25)}
+
+  /* Animated "now playing" bars */
+  .eq{display:inline-flex;align-items:flex-end;gap:2px;width:14px;height:12px;flex-shrink:0}
+  .eq i{flex:1;background:currentColor;border-radius:1px;animation:eq 1s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:-.35s}
+  .eq i:nth-child(3){animation-delay:-.7s}
+  @keyframes eq{0%,100%{height:30%}50%{height:100%}}
+  @media (prefers-reduced-motion:reduce){.eq i{animation:none;height:70%}}
+  .panel-status .eq{color:var(--accent);width:12px;height:10px}
+
+  /* Body */
+  #audioButtons{display:none;flex-direction:column;gap:8px;margin-top:8px;min-height:0;flex:1}
+  #audioPanel.expanded #audioButtons{display:flex}
+
+  .panel-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;height:36px;padding:0 12px;border-radius:10px;
+    font:inherit;font-size:12.5px;font-weight:600;
+    color:var(--text);background:var(--row-bg);border:1px solid var(--panel-border);
+    cursor:pointer;transition:background .15s,border-color .15s,color .15s;
   }
-  #audioPanel.expanded .panel-minimize{ display:flex; }
-  .panel-minimize:hover{ transform:scale(1.05); background:#555; }
-  .panel-title{
-    font-size:13px;
-    color:#0f0;
-    font-weight:600;
-    display:none;
-    flex:1;
+  .panel-btn:hover{background:var(--row-hover);border-color:rgba(255,255,255,.16)}
+  .mute-all-btn.is-muted{color:var(--muted)}
+  .mute-all-btn:not(.is-muted){color:#fecaca;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35)}
+  .mute-all-btn:not(.is-muted):hover{background:rgba(239,68,68,.2)}
+
+  .section-label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:2px 4px 0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
   }
-  .panel-status{
-    font-size:11px;
-    color:#888;
-    display:none;
+  .section-label span:last-child{letter-spacing:0;text-transform:none;font-weight:500}
+
+  .channel-list{
+    display:flex;flex-direction:column;gap:1px;
+    overflow-y:auto;min-height:0;flex:1;margin:0 -4px;padding:0 4px;
+    scrollbar-width:thin;scrollbar-color:#3a3e4a transparent;
   }
-  #audioPanel.expanded .panel-title,
-  #audioPanel.expanded .panel-status{ display:block; }
-  #audioButtons{
-    display:none;
-    flex-direction:column;
-    gap:4px;
-    margin-top:4px;
+  .channel-list::-webkit-scrollbar{width:6px}
+  .channel-list::-webkit-scrollbar-thumb{background:#3a3e4a;border-radius:3px}
+
+  .ch{
+    display:flex;align-items:center;gap:10px;
+    min-height:34px;padding:0 3px 0 10px;border-radius:9px;
+    border:1px solid transparent;cursor:pointer;
+    transition:background .15s,border-color .15s,opacity .15s;
   }
-  #audioPanel.expanded #audioButtons{ display:flex; }
-  .mute-all-btn{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    width:100%;
-    padding:8px 10px;
-    background:#3a1a1a;
-    border:1px solid #c33;
-    border-radius:6px;
-    color:#fcc;
-    cursor:pointer;
-    text-align:center;
-    transition:all 0.15s;
-    font-size:12px;
-    font-weight:600;
-    margin-bottom:4px;
+  .ch:hover{background:var(--row-hover)}
+  .ch .status{display:flex;align-items:center;justify-content:center;width:16px;color:var(--faint)}
+  .ch .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .ch .key{
+    min-width:19px;height:19px;padding:0 5px;border-radius:5px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-bottom-width:2px;
   }
-  .mute-all-btn:hover{ background:#4a2a2a; border-color:#f55; color:#fff; }
-  .mute-all-btn .icon{ font-size:14px; }
-  .audio-btn{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    width:100%;
-    padding:6px 10px;
-    background:#222;
-    border:1px solid #333;
-    border-radius:6px;
-    color:#ddd;
-    cursor:pointer;
-    text-align:left;
-    transition:all 0.15s;
-    font-size:12px;
-  }
-  .audio-btn:hover{ background:#2a2a3a; border-color:#555; }
-  .audio-btn.active{ background:#1a3a1a; border-color:#0f0; color:#0f0; }
-  .audio-btn .status{ font-size:16px; min-width:20px; text-align:center; }
-  .audio-btn .label{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .audio-btn .index{ color:#888; font-size:11px; min-width:18px; }
-  .audio-btn.is-hidden{ opacity:0.5; }
-  .audio-btn.is-hidden .label{ text-decoration:line-through; color:#888; }
-  .vis-toggle{
-    background:transparent;border:none;color:#aaa;cursor:pointer;
-    font-size:14px;padding:2px 4px;border-radius:4px;line-height:1;
-  }
-  .vis-toggle:hover{ background:#333;color:#fff; }
-  .panel-actions{
-    display:flex;gap:4px;margin-bottom:4px;
-  }
-  .panel-actions button{
-    flex:1;padding:6px 8px;background:#222;border:1px solid #333;border-radius:6px;
-    color:#bbb;cursor:pointer;font-size:11px;transition:all 0.15s;
-  }
-  .panel-actions button:hover{ background:#2a2a3a;border-color:#555;color:#fff; }
+  .ch .key:empty{visibility:hidden}
+  .vis-toggle{width:28px;height:28px;border-radius:7px}
+  .ch.active{background:var(--accent-soft);border-color:var(--accent-line)}
+  .ch.active .status{color:var(--accent)}
+  .ch.active .label{color:#fff}
+  .ch.active .key{color:var(--accent);border-color:var(--accent-line);background:rgba(34,197,94,.1)}
+  .ch.is-hidden .label,.ch.is-hidden .status,.ch.is-hidden .key{opacity:.4}
+  .ch.is-hidden .vis-toggle{color:var(--faint)}
+
+  /* Footer */
+  .panel-footer{display:flex;flex-direction:column;gap:8px;flex-shrink:0;padding-top:8px;border-top:1px solid var(--panel-border)}
+  .panel-actions{display:flex;gap:6px}
+  .panel-actions .panel-btn{height:32px;font-size:12px;font-weight:500;color:var(--muted)}
+  .panel-actions .panel-btn:hover{color:var(--text)}
   .bmc-link{
-    display:flex;align-items:center;justify-content:center;gap:6px;
-    margin-top:2px;padding:7px 10px;border-radius:6px;
-    background:#ffdd00;color:#000;font-size:12px;font-weight:700;text-decoration:none;
-    border:1px solid #ffdd00;transition:all 0.15s;
+    display:flex;align-items:center;justify-content:center;gap:8px;height:36px;border-radius:10px;
+    background:#ffdd00;color:#141414;font-size:12.5px;font-weight:700;text-decoration:none;
+    transition:filter .15s,transform .15s;
   }
-  .bmc-link:hover{ background:#ffe94d;border-color:#fff; }
-  .bmc-link:focus-visible{ outline:2px solid #fff;outline-offset:2px; }
-  #audioPanel::-webkit-scrollbar{ width:6px; }
-  #audioPanel::-webkit-scrollbar-track{ background:#1a1a2a; border-radius:3px; }
-  #audioPanel::-webkit-scrollbar-thumb{ background:#444; border-radius:3px; }
-  #audioPanel::-webkit-scrollbar-thumb:hover{ background:#555; }
+  .bmc-link:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .bmc-link .icon{stroke-width:2.2}
+  .shortcuts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;font-size:11px;color:var(--faint)}
+  .shortcuts kbd{
+    font:inherit;font-weight:600;color:var(--muted);
+    padding:0 4px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  }
+  @media (hover:none){.shortcuts{display:none}}
 </style>
 </head>
 <body>
 <div class="grid" id="grid"></div>
 
 <!-- Collapsible Audio Control Panel -->
-<div id="audioPanel" class="expanded">
-  <div class="panel-header" id="panelHeader">
-    <span class="panel-title">Audio Focus</span>
-    <span class="panel-status" id="panelStatus">All muted</span>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.9 4.24A9 9 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M17.94 17.94A10 10 0 0 1 12 20c-6.5 0-10-8-10-8a18 18 0 0 1 5.06-5.94"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></symbol>
+</svg>
+<div id="audioPanel" class="expanded" role="region" aria-label="Audio controls">
+  <div class="panel-header" id="panelHeader" title="Drag to move">
+    <span class="panel-grip" aria-hidden="true"><svg class="icon"><use href="#i-grip"/></svg></span>
+    <div class="panel-heading">
+      <span class="panel-title">Audio</span>
+      <span class="panel-status" id="panelStatus" aria-live="polite">All muted</span>
+    </div>
     <div class="panel-controls">
-      <button class="panel-minimize" id="panelMinimize" title="Minimize panel">−</button>
-      <button class="panel-speaker" id="panelSpeaker" title="Open audio controls">🔊</button>
+      <button class="icon-btn panel-minimize" id="panelMinimize" title="Minimize (Esc)" aria-label="Minimize audio panel"><svg class="icon"><use href="#i-minus"/></svg></button>
+      <button class="icon-btn panel-speaker" id="panelSpeaker" title="Open audio controls" aria-label="Open audio controls"><svg class="icon"><use href="#i-vol"/></svg></button>
     </div>
   </div>
   <div id="audioButtons"></div>
@@ -328,6 +330,14 @@
   document.head.appendChild(tag);
 
   // Create tiles and audio buttons
+  // Panel body: mute-all, channel list, footer
+  const listLabel = document.createElement("div");
+  listLabel.className = "section-label";
+  listLabel.innerHTML = `<span>Channels</span><span id="visibleCount"></span>`;
+  const channelList = document.createElement("div");
+  channelList.className = "channel-list";
+  audioButtonsContainer.append(listLabel, channelList);
+
   for (let i = 0; i < VIDEOS.length; i++) {
     const v = VIDEOS[i];
     const tile = document.createElement("div");
@@ -346,33 +356,45 @@
     grid.appendChild(tile);
 
     const btn = document.createElement("div");
-    btn.className = "audio-btn";
+    btn.className = "ch audio-btn";
+    btn.tabIndex = 0;
+    btn.setAttribute("role", "button");
+    btn.setAttribute("aria-pressed", "false");
     btn.innerHTML = `
-      <span class="status">🔇</span>
+      <span class="status"><svg class="icon"><use href="#i-mute"/></svg></span>
       <span class="label">${CHANNELS[i].name}</span>
-      <span class="index">#${i + 1}</span>
-      <button class="vis-toggle" title="Hide/show this video">👁️</button>
+      <span class="key" title="Keyboard shortcut">${i < 9 ? i + 1 : ""}</span>
+      <button class="icon-btn vis-toggle" title="Hide this channel" aria-label="Hide ${CHANNELS[i].name}"><svg class="icon"><use href="#i-eye"/></svg></button>
     `;
     btn.dataset.index = i;
+    const focusThis = () => {
+      if (hidden.has(i)) toggleVisibility(i); // picking a hidden channel shows it
+      setAudioFocus(activeAudioIndex === i ? -1 : i); // click again to mute
+    };
     btn.addEventListener("click", (e) => {
-      if (e.target.classList.contains("vis-toggle")) return;
+      if (e.target.closest(".vis-toggle")) return;
       e.stopPropagation();
-      if (hidden.has(i)) return; // can't focus a hidden video
-      setAudioFocus(i);
-      if (!isPanelExpanded) expandPanel();
+      focusThis();
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.target !== btn || (e.key !== "Enter" && e.key !== " ")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      focusThis();
     });
     btn.querySelector(".vis-toggle").addEventListener("click", (e) => {
       e.stopPropagation();
       toggleVisibility(i);
     });
-    audioButtonsContainer.appendChild(btn);
+    channelList.appendChild(btn);
   }
 
-  // Show All / Hide All quick actions
+  // Footer: Show/Hide all, Buy Me a Coffee, shortcut hint
+  const footer = document.createElement("div");
+  footer.className = "panel-footer";
   const actions = document.createElement("div");
   actions.className = "panel-actions";
-  actions.innerHTML = `<button id="showAllBtn">Show All</button><button id="hideAllBtn">Hide All</button>`;
-  audioButtonsContainer.appendChild(actions);
+  actions.innerHTML = `<button class="panel-btn" id="showAllBtn">Show all</button><button class="panel-btn" id="hideAllBtn">Hide all</button>`;
   actions.querySelector("#showAllBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     hidden.clear();
@@ -384,7 +406,6 @@
     applyVisibility();
   });
 
-  // Buy Me a Coffee link (bottom of the panel)
   const BMC_URL = "https://buymeacoffee.com/aromalsanthosh";
   const bmcLink = document.createElement("a");
   bmcLink.className = "bmc-link";
@@ -392,14 +413,21 @@
   bmcLink.target = "_blank";
   bmcLink.rel = "noopener";
   bmcLink.title = "Support this site on Buy Me a Coffee";
-  bmcLink.innerHTML = `<span aria-hidden="true">☕</span> Buy me a coffee`;
+  bmcLink.innerHTML = `<svg class="icon"><use href="#i-coffee"/></svg> Buy me a coffee`;
   bmcLink.addEventListener("click", (e) => e.stopPropagation());
-  audioButtonsContainer.appendChild(bmcLink);
+
+  const hint = document.createElement("div");
+  hint.className = "shortcuts";
+  hint.innerHTML = `<span><kbd>1</kbd>–<kbd>9</kbd> listen</span><span><kbd>M</kbd> mute</span><span><kbd>Esc</kbd> minimize</span>`;
+
+  footer.append(actions, bmcLink, hint);
+  audioButtonsContainer.appendChild(footer);
 
   // Mute All button at top
   const muteAllBtn = document.createElement("button");
-  muteAllBtn.className = "mute-all-btn";
-  muteAllBtn.innerHTML = `<span class="icon">🔇</span> Mute All`;
+  muteAllBtn.className = "panel-btn mute-all-btn is-muted";
+  muteAllBtn.innerHTML = `<svg class="icon"><use href="#i-mute"/></svg> <span>Mute all</span>`;
+  muteAllBtn.title = "Mute all (M or 0)";
   muteAllBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     setAudioFocus(-1);
@@ -410,14 +438,14 @@
     if (!isPanelExpanded) {
       isPanelExpanded = true;
       audioPanel.classList.add("expanded");
-      panelHeader.title = "Drag to move · click speaker to minimize";
+      panelHeader.title = "Drag to move";
     }
   }
   function collapsePanel() {
     if (isPanelExpanded) {
       isPanelExpanded = false;
       audioPanel.classList.remove("expanded");
-      panelHeader.title = "Drag to move · click 🔊 to open audio controls";
+      panelHeader.title = "Drag to move";
     }
   }
   function togglePanel() {
@@ -498,9 +526,7 @@
   panelSpeaker.addEventListener("click", (e) => { e.stopPropagation(); expandPanel(); });
   panelMinimize.addEventListener("click", (e) => { e.stopPropagation(); collapsePanel(); });
   panelHeader.addEventListener("click", (e) => {
-    if (e.target === panelHeader || e.target.classList.contains("panel-title") || e.target.classList.contains("panel-status")) {
-      togglePanel();
-    }
+    if (!e.target.closest("button")) togglePanel();
   });
 
   // === Visibility / dynamic grid ===
@@ -527,8 +553,15 @@
     document.querySelectorAll(".audio-btn").forEach((btn, i) => {
       btn.classList.toggle("is-hidden", hidden.has(i));
       const tog = btn.querySelector(".vis-toggle");
-      if (tog) tog.textContent = hidden.has(i) ? "🙈" : "👁️";
+      if (tog) {
+        const isHidden = hidden.has(i);
+        tog.innerHTML = `<svg class="icon"><use href="#i-${isHidden ? "eye-off" : "eye"}"/></svg>`;
+        tog.title = `${isHidden ? "Show" : "Hide"} this channel`;
+        tog.setAttribute("aria-label", `${isHidden ? "Show" : "Hide"} ${CHANNELS[i].name}`);
+      }
     });
+    const countEl = document.getElementById("visibleCount");
+    if (countEl) countEl.textContent = `${visibleCount} of ${VIDEOS.length} shown`;
     const { cols, rows } = computeGridShape(visibleCount);
     grid.style.setProperty("--cols", cols);
     grid.style.setProperty("--rows", rows);
@@ -554,20 +587,25 @@
 
   function setAudioFocus(index) {
     activeAudioIndex = index;
+    const EQ = `<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>`;
     document.querySelectorAll(".audio-btn").forEach((btn, i) => {
-      const status = btn.querySelector(".status");
-      if (i === index) {
-        btn.classList.add("active");
-        status.textContent = "🔊";
-      } else {
-        btn.classList.remove("active");
-        status.textContent = "🔇";
-      }
+      const on = i === index;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.querySelector(".status").innerHTML = on ? EQ : `<svg class="icon"><use href="#i-mute"/></svg>`;
     });
     document.querySelectorAll(".tile").forEach((tile, i) => {
       tile.classList.toggle("active-audio", i === index);
     });
-    panelStatus.textContent = index === -1 ? "All muted" : `Playing: ${CHANNELS[index].name}`;
+    if (index === -1) {
+      panelStatus.textContent = "All muted";
+    } else {
+      panelStatus.innerHTML = `${EQ}<span>Playing</span> <b></b>`;
+      panelStatus.querySelector("b").textContent = CHANNELS[index].name;
+    }
+    audioPanel.classList.toggle("playing", index !== -1);
+    muteAllBtn.classList.toggle("is-muted", index === -1);
+    panelSpeaker.title = index === -1 ? "Open audio controls" : `Playing ${CHANNELS[index].name} · open controls`;
     players.forEach((player, i) => {
       if (!player?.mute) return;
       if (i === index) { player.unMute(); player.setVolume(100); }
@@ -624,6 +662,8 @@
 
   // Apply default-hidden channels, then initialize muted
   applyVisibility();
+  // On phones the panel would cover most of the screen: start minimized
+  if (window.matchMedia("(max-width: 699px)").matches) collapsePanel();
   setTimeout(() => setAudioFocus(-1), 2000);
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "186e0207f66f4589b3360b1bf72966b0"}'></script><!-- End Cloudflare Web Analytics -->

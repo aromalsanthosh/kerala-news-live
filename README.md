@@ -10,10 +10,10 @@ Malayalam news coverage (especially during elections, breaking news, budgets, et
 
 - **Multi-stream grid** — watch 9+ Malayalam news channels (24, Asianet, Reporter, Manorama, Mathrubhumi, Janam, Media One, Kairali, News Malayalam 24x7) concurrently, plus Big TV (hidden by default while its only live stream is age-restricted and can't be embedded — enable it with 👁️ and hide another channel to keep a 3×3 grid).
 - **Responsive auto-layout** — grid shape adapts to the number of visible tiles (1×1, 2×1, 2×2, 3×2, 3×3, 4×3, …) and fits the viewport with no scrolling on desktop/tablet; stacks vertically on mobile.
-- **Single-audio focus** — all streams start muted; click a channel (or press `1`–`9`) to unmute just that one. Active tile gets a green border.
+- **Single-audio focus** — all streams start muted; click a channel (or press `1`–`9`) to unmute just that one; click it again to mute. The playing channel shows an animated equalizer and its tile gets a green border.
 - **Mute all** — press `0` or `M`, or use the "Mute All" button.
-- **Show / hide channels** — toggle individual channels with the 👁️ button, or use Show All / Hide All. Hidden streams are paused to save bandwidth.
-- **Collapsible audio panel** — floating control panel minimizes to a small speaker icon to stay out of the way.
+- **Show / hide channels** — toggle individual channels with the eye button, or use Show all / Hide all. Clicking a hidden channel shows it and plays its audio. Hidden streams are paused to save bandwidth.
+- **Collapsible audio panel** — frosted-glass control panel with keyboard-shortcut badges per channel; it minimizes to a round speaker button (green while audio is playing) and starts minimized on phones.
 - **Movable audio panel** — drag the panel by its header (mouse or touch) to move it anywhere; it stays on screen and remembers its position.
 - **Keyboard shortcuts**
   - `1`–`9` → focus audio on channel N
