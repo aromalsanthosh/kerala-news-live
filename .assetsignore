@@ -1,3 +1,13 @@
 # Only the site itself is published; everything else in the repo stays private.
 *
 !index.html
+!favicon.ico
+!favicon.svg
+!apple-touch-icon.png
+!icon-192.png
+!icon-512.png
+!icon-maskable-512.png
+!og-image.png
+!site.webmanifest
+!robots.txt
+!sitemap.xml
