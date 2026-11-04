@@ -19,8 +19,21 @@ INDEX = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().pare
 LINE_RE = re.compile(r'(\{\s*id:\s*")([^"]+)(",\s*channel:\s*")(UC[\w-]{22})(",\s*name:\s*"([^"]+)")')
 CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]{11})"')
 LIVE_FLAG_RE = re.compile(r'"isLiveNow":\s*true|"isLive":\s*true')
+VIDEO_DETAILS_RE = re.compile(r'"videoDetails":\s*\{\s*"videoId":\s*"([\w-]{11})"')
 VIDEO_ID_RE = re.compile(r'"videoId":"([\w-]{11})"')
-LIVE_BADGES = ('"style":"LIVE"', '"iconType":"LIVE"', 'BADGE_STYLE_TYPE_LIVE_NOW')
+LIVE_BADGES = (
+    '"style":"LIVE"',
+    '"iconType":"LIVE"',
+    "BADGE_STYLE_TYPE_LIVE_NOW",
+    "THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE",
+    '"overlayStyle":"LIVE"',
+)
+# Markers reported in skip diagnostics to show what the page actually contained.
+DIAG_MARKERS = (
+    '"videoDetails"', '"isLive":true', '"isLiveNow":true', '"isLiveContent":true',
+    '"playabilityStatus":{"status":"LOGIN_REQUIRED"', "confirm you", "consent.youtube",
+    "LIVE_NOW", "STYLE_LIVE", '"text":"LIVE"', '"videoId"',
+)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
@@ -41,14 +54,20 @@ def describe(final_url: str, html: str) -> str:
     title = re.search(r"<title>(.*?)</title>", html, re.S)
     canon = re.search(r'<link rel="canonical" href="([^"]+)"', html)
     return (f"url={final_url} canonical={canon.group(1) if canon else None} "
-            f"title={title.group(1).strip()[:60] if title else None!r} len={len(html)}")
+            f"title={title.group(1).strip()[:60] if title else None!r} len={len(html)} "
+            f"markers={ {k: html.count(k) for k in DIAG_MARKERS if k in html} }")
 
 
 def from_live_page(channel_id: str) -> tuple[str | None, str]:
     final_url, html = fetch(f"https://www.youtube.com/channel/{channel_id}/live")
+    live = LIVE_FLAG_RE.search(html)
     m = CANONICAL_RE.search(html)
-    if m and LIVE_FLAG_RE.search(html):
+    if m and live:
         return m.group(1), "live page"
+    # The player response is embedded even when the page shell is minimal.
+    m = VIDEO_DETAILS_RE.search(html)
+    if m and live:
+        return m.group(1), "live page player data"
     return None, describe(final_url, html)
 
 
