@@ -253,6 +253,55 @@
     font:inherit;font-weight:600;color:var(--muted);
     padding:0 4px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
   }
+  .support-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .support-row .bmc-link,.upi-btn{font-size:12px;gap:6px;padding:0 8px;white-space:nowrap}
+  .upi-btn{
+    display:flex;align-items:center;justify-content:center;height:36px;border-radius:10px;border:0;cursor:pointer;
+    font:inherit;font-size:12px;font-weight:700;color:#0f172a;background:#fff;
+    transition:filter .15s,transform .15s;
+  }
+  .upi-btn:hover{filter:brightness(.94);transform:translateY(-1px)}
+  .upi-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .upi-btn .rupee{font-size:14px;font-weight:700;color:#16a34a}
+
+  /* UPI dialog */
+  .upi-overlay{
+    position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;
+    background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .upi-overlay.open{display:flex}
+  .upi-card{
+    position:relative;width:min(340px,100%);padding:24px 22px 20px;border-radius:20px;text-align:center;
+    color:var(--text);background:#14151c;border:1px solid var(--panel-border);
+    box-shadow:0 30px 80px rgba(0,0,0,.6);animation:upi-in .18s ease-out;
+  }
+  @keyframes upi-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.upi-card{animation:none}}
+  .upi-card h2{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .upi-card p{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
+  .upi-close{position:absolute;top:10px;right:10px}
+  .upi-qr{display:block;width:200px;height:200px;margin:0 auto 14px;padding:10px;border-radius:14px;background:#fff}
+  .upi-id{
+    display:flex;align-items:center;gap:8px;margin:0 auto 12px;padding:4px 4px 4px 12px;border-radius:10px;
+    background:var(--row-bg);border:1px solid var(--panel-border);font-size:13px;font-weight:600;
+  }
+  .upi-id span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .upi-copy{height:30px;width:auto;padding:0 12px;font-size:12px;font-weight:600;color:var(--text);background:rgba(255,255,255,.08)}
+  .upi-copy.copied{color:var(--accent)}
+  .upi-open{
+    display:none;align-items:center;justify-content:center;height:42px;margin-bottom:12px;border-radius:12px;
+    background:var(--accent);color:#04140a;font-size:14px;font-weight:700;text-decoration:none;
+  }
+  .upi-apps{font-size:11.5px;color:var(--faint)}
+  .upi-overlay.android .upi-open{display:flex}
+  .upi-ios-apps{display:none;gap:6px;margin-bottom:12px}
+  .upi-overlay.ios .upi-ios-apps{display:grid;grid-template-columns:repeat(3,1fr)}
+  .upi-ios-apps a{
+    display:flex;align-items:center;justify-content:center;height:38px;border-radius:10px;
+    background:var(--row-bg);border:1px solid var(--panel-border);color:var(--text);
+    font-size:12.5px;font-weight:600;text-decoration:none;
+  }
+  .upi-ios-apps a:active{background:var(--row-hover)}
   .credit{text-align:center;font-size:11.5px;color:var(--muted)}
   .credit a{color:var(--text);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.2);transition:border-color .15s,color .15s}
   .credit a:hover{color:#fff;border-color:var(--accent)}
@@ -271,6 +320,7 @@
   <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.9 4.24A9 9 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M17.94 17.94A10 10 0 0 1 12 20c-6.5 0-10-8-10-8a18 18 0 0 1 5.06-5.94"/><path d="m2 2 20 20"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
   <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></symbol>
 </svg>
 <div id="audioPanel" class="expanded" role="region" aria-label="Audio controls">
@@ -286,6 +336,24 @@
     </div>
   </div>
   <div id="audioButtons"></div>
+</div>
+
+<!-- Pay via UPI dialog -->
+<div class="upi-overlay" id="upiDialog" role="dialog" aria-modal="true" aria-labelledby="upiTitle" hidden>
+  <div class="upi-card">
+    <button class="icon-btn upi-close" id="upiClose" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+    <h2 id="upiTitle">Support via UPI</h2>
+    <p>Scan with any UPI app, or copy the UPI ID, to send any amount. Thank you!</p>
+    <a class="upi-open" id="upiOpen" href="#">Open UPI app</a>
+    <div class="upi-ios-apps" id="upiIosApps">
+      <a data-scheme="gpay://upi/pay">GPay</a>
+      <a data-scheme="phonepe://pay">PhonePe</a>
+      <a data-scheme="paytmmp://pay">Paytm</a>
+    </div>
+    <img class="upi-qr" src="upi-qr.svg" alt="UPI QR code for aromalponmana@oksbi" width="200" height="200" loading="lazy" />
+    <div class="upi-id"><span id="upiIdText"></span><button class="icon-btn upi-copy" id="upiCopy">Copy</button></div>
+    <div class="upi-apps">Google Pay · PhonePe · Paytm · BHIM · any bank app</div>
+  </div>
 </div>
 
 <script>
@@ -418,6 +486,21 @@
   bmcLink.rel = "noopener";
   bmcLink.title = "Support this site on Buy Me a Coffee";
   bmcLink.innerHTML = `<svg class="icon"><use href="#i-coffee"/></svg> Buy me a coffee`;
+
+  // Pay via UPI (India): opens a dialog with QR, UPI ID and an app deep link.
+  // If you change UPI_ID, regenerate upi-qr.svg with scripts/make_upi_qr.py.
+  const UPI_ID = "aromalponmana@oksbi";
+  const UPI_NAME = "Aromal Santhosh";
+  const UPI_URI = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&cu=INR`;
+  const upiBtn = document.createElement("button");
+  upiBtn.className = "upi-btn";
+  upiBtn.type = "button";
+  upiBtn.title = "Pay via UPI (GPay, PhonePe, Paytm…)";
+  upiBtn.innerHTML = `<span class="rupee" aria-hidden="true">₹</span> Pay via UPI`;
+
+  const supportRow = document.createElement("div");
+  supportRow.className = "support-row";
+  supportRow.append(bmcLink, upiBtn);
   bmcLink.addEventListener("click", (e) => e.stopPropagation());
 
   const hint = document.createElement("div");
@@ -429,7 +512,7 @@
   credit.innerHTML = `Made with <span role="img" aria-label="love">❤️</span> by <a href="https://aromalsanthosh.com" target="_blank" rel="noopener">Aromal</a>`;
   credit.querySelector("a").addEventListener("click", (e) => e.stopPropagation());
 
-  footer.append(actions, bmcLink, hint, credit);
+  footer.append(actions, supportRow, hint, credit);
   audioButtonsContainer.appendChild(footer);
 
   // Mute All button at top
@@ -653,6 +736,61 @@
   window.onYouTubeIframeAPIReady = function() {
     for (let i = 0; i < VIDEOS.length; i++) attachPlayer(i);
   };
+
+  // === UPI dialog ===
+  const upiDialog = document.getElementById("upiDialog");
+  const upiCopy = document.getElementById("upiCopy");
+  document.getElementById("upiIdText").textContent = UPI_ID;
+  document.getElementById("upiOpen").href = UPI_URI;
+  // Android hands upi:// links to a "Pay with" app chooser; iOS has no shared
+  // handler, so offer each app's own scheme there instead.
+  const ua = navigator.userAgent;
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  upiDialog.classList.toggle("android", isAndroid);
+  upiDialog.classList.toggle("ios", isIOS);
+  const upiQuery = UPI_URI.slice(UPI_URI.indexOf("?"));
+  document.querySelectorAll("#upiIosApps a").forEach(a => { a.href = a.dataset.scheme + upiQuery; });
+  let upiReturnFocus = null;
+  function openUpi() {
+    upiReturnFocus = document.activeElement;
+    upiDialog.hidden = false;
+    upiDialog.classList.add("open");
+    document.getElementById("upiClose").focus();
+  }
+  function closeUpi() {
+    upiDialog.classList.remove("open");
+    upiDialog.hidden = true;
+    upiReturnFocus?.focus?.();
+  }
+  upiBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openUpi(); // stays open as a fallback (QR + copy) when the visitor comes back
+    if (isAndroid) window.location.href = UPI_URI; // jump straight to the UPI app chooser
+  });
+  document.getElementById("upiClose").addEventListener("click", closeUpi);
+  upiDialog.addEventListener("click", (e) => { if (e.target === upiDialog) closeUpi(); });
+  upiCopy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(UPI_ID);
+    } catch (_) {
+      const r = document.createRange(); r.selectNodeContents(document.getElementById("upiIdText"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand("copy");
+    }
+    upiCopy.textContent = "Copied";
+    upiCopy.classList.add("copied");
+    setTimeout(() => { upiCopy.textContent = "Copy"; upiCopy.classList.remove("copied"); }, 1600);
+  });
+  upiDialog.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closeUpi(); }
+    if (e.key === "Tab") { // keep focus inside the dialog
+      const f = [...upiDialog.querySelectorAll("button, a[href]")].filter(el => el.offsetParent);
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    e.stopPropagation(); // don't trigger channel shortcuts while the dialog is open
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
