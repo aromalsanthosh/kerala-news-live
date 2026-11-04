@@ -32,8 +32,13 @@ API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 LINE_RE = re.compile(r'(\{\s*id:\s*")([^"]+)(",\s*channel:\s*")(UC[\w-]{22})(",\s*name:\s*"([^"]+)")')
 CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]{11})"')
 LIVE_FLAG_RE = re.compile(r'"isLiveNow":\s*true|"isLive":\s*true')
-VIDEO_ID_RE = re.compile(r'"videoId":"([\w-]{11})"')
+VIDEO_ID_RE = re.compile(r'"videoId":\s*"([\w-]{11})"')
+VIDEO_DETAILS_RE = re.compile(r'"videoDetails":\s*\{')
+# Newer channel-tab markup ("lockupViewModel") stores the video ID as contentId.
+LOCKUP_RE = re.compile(r'"lockupViewModel":\s*\{')
+CONTENT_ID_RE = re.compile(r'"contentId":\s*"([\w-]{11})"')
 LIVE_BADGES = (
+    'STYLE_LIVE',
     '"style":"LIVE"',
     '"iconType":"LIVE"',
     "BADGE_STYLE_TYPE_LIVE_NOW",
@@ -124,24 +129,34 @@ def scrape_candidates(channel_id: str) -> tuple[list[tuple[str, str]], list[str]
     if LIVE_FLAG_RE.search(html):
         m = CANONICAL_RE.search(html)
         if not m:
-            i = html.find('"videoDetails":{')
-            m = VIDEO_ID_RE.search(html, i, i + 400) if i != -1 else None
+            d = VIDEO_DETAILS_RE.search(html)
+            m = VIDEO_ID_RE.search(html, d.end(), d.end() + 600) if d else None
         if m:
             cands.append((m.group(1), html))
     if not cands:
         notes.append("live page: no live video")
 
     html = fetch(f"https://www.youtube.com/channel/{channel_id}/streams")
+    found = []
+    # New layout: one lockupViewModel per video, carrying contentId and badges.
+    starts = [m.start() for m in LOCKUP_RE.finditer(html)]
+    for i, start in enumerate(starts):
+        end = starts[i + 1] if i + 1 < len(starts) else len(html)
+        seg = html[start:end]
+        m = CONTENT_ID_RE.search(seg)
+        if m and any(marker in seg for marker in LIVE_BADGES):
+            found.append(m.group(1))
+    # Old layout: videoRenderer, keyed by videoId.
     ids = [(m.start(), m.group(1)) for m in VIDEO_ID_RE.finditer(html)]
-    found = False
     for i, (start, vid) in enumerate(ids):
         if i and ids[i - 1][1] == vid:
             continue
         end = next((p for p, v in ids[i + 1:] if v != vid), len(html))
         if any(marker in html[start:end] for marker in LIVE_BADGES):
-            if vid not in (c for c, _ in cands):
-                cands.append((vid, ""))  # no watch page for this one
-            found = True
+            found.append(vid)
+    for vid in found:
+        if vid not in [c for c, _ in cands]:
+            cands.append((vid, ""))  # no watch page for this one
     if not found:
         notes.append("streams tab: no LIVE badge")
     return cands, notes
