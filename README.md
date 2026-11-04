@@ -46,4 +46,5 @@ const CHANNELS = [
 
 - Streams are embedded via the YouTube IFrame API; availability depends on each channel currently being live.
 - Live stream IDs expire when a channel restarts its stream. If a tile's video errors or its stream ends, it automatically switches to `embed/live_stream?channel=<channel>`, which resolves to the channel's current live stream. This isn't the default because YouTube's `live_stream` embed shows "Video unavailable" for some channels (e.g. ones running several live streams at once), so a known-good video ID is still preferred.
+- **Daily auto-refresh of live IDs** — the `Update live stream IDs` GitHub Action (`.github/workflows/update-live-ids.yml`) runs daily at 06:00 IST (and on demand from the Actions tab). It runs `scripts/update_live_ids.py`, which opens each channel's `youtube.com/channel/<id>/live` page, reads the current live video ID, and commits any changed IDs to `index.html`. Channels that aren't live, or whose lookup fails, keep their existing ID. Run it locally with `python3 scripts/update_live_ids.py`.
 - Autoplay policies require the page to start muted — that's why focus mode unmutes one at a time.
