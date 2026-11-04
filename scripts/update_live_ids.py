@@ -1,25 +1,37 @@
 #!/usr/bin/env python3
 """Refresh the live video IDs in index.html's CHANNELS array.
 
-For each channel, fetch https://www.youtube.com/channel/<id>/live. When the
-channel is live, YouTube serves that stream's watch page, whose canonical URL
-contains the current video ID. If a channel isn't live (or the lookup fails),
-its existing ID is left untouched.
+Two lookup modes:
+
+* YouTube Data API (used when YOUTUBE_API_KEY is set) -- reliable. Lists each
+  channel's live broadcasts and checks that the stream is embeddable and not
+  age-restricted. Costs ~101 quota units per channel (default quota: 10,000/day).
+* Page scraping (fallback) -- reads youtube.com/channel/<id>/live and the
+  channel's /streams tab. YouTube often answers datacenter IPs (such as GitHub
+  Actions runners) with a "confirm you're not a bot" page, so this mode may
+  find only some channels.
+
+A new ID is only written when it passes the embed checks; otherwise the
+existing ID is kept, so a failed lookup never makes things worse.
 
 Usage: python3 scripts/update_live_ids.py [path/to/index.html]
 """
+import json
+import os
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 INDEX = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "index.html")
+API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 
 # One line per channel: { id: "...", channel: "UC...", name: "..." ... },
 LINE_RE = re.compile(r'(\{\s*id:\s*")([^"]+)(",\s*channel:\s*")(UC[\w-]{22})(",\s*name:\s*"([^"]+)")')
 CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]{11})"')
 LIVE_FLAG_RE = re.compile(r'"isLiveNow":\s*true|"isLive":\s*true')
-VIDEO_DETAILS_RE = re.compile(r'"videoDetails":\s*\{\s*"videoId":\s*"([\w-]{11})"')
 VIDEO_ID_RE = re.compile(r'"videoId":"([\w-]{11})"')
 LIVE_BADGES = (
     '"style":"LIVE"',
@@ -28,12 +40,15 @@ LIVE_BADGES = (
     "THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE",
     '"overlayStyle":"LIVE"',
 )
-# Markers reported in skip diagnostics to show what the page actually contained.
-DIAG_MARKERS = (
-    '"videoDetails"', '"isLive":true', '"isLiveNow":true', '"isLiveContent":true',
-    '"playabilityStatus":{"status":"LOGIN_REQUIRED"', "confirm you", "consent.youtube",
-    "LIVE_NOW", "STYLE_LIVE", '"text":"LIVE"', '"videoId"',
+# Signs in a watch page that the video can't play in an embed for everyone.
+UNEMBEDDABLE_MARKERS = (
+    '"isFamilySafe":false',
+    "confirm your age",
+    "AGE_VERIFICATION_REQUIRED",
+    "AGE_CHECK_REQUIRED",
+    '"playableInEmbed":false',
 )
+BOT_CHECK_MARKER = "confirm you’re not a bot"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
@@ -43,78 +58,142 @@ HEADERS = {
 }
 
 
-def fetch(url: str) -> tuple[str, str]:
+def fetch(url: str) -> str:
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.geturl(), resp.read().decode("utf-8", "replace")
+        return resp.read().decode("utf-8", "replace")
 
 
-def describe(final_url: str, html: str) -> str:
-    """Short reason string for logs when no live ID was found."""
-    title = re.search(r"<title>(.*?)</title>", html, re.S)
-    canon = re.search(r'<link rel="canonical" href="([^"]+)"', html)
-    return (f"url={final_url} canonical={canon.group(1) if canon else None} "
-            f"title={title.group(1).strip()[:60] if title else None!r} len={len(html)} "
-            f"markers={ {k: html.count(k) for k in DIAG_MARKERS if k in html} }")
+def fetch_json(url: str) -> dict:
+    with urllib.request.urlopen(url, timeout=30) as resp:
+        return json.load(resp)
 
 
-def from_live_page(channel_id: str) -> tuple[str | None, str]:
-    final_url, html = fetch(f"https://www.youtube.com/channel/{channel_id}/live")
-    live = LIVE_FLAG_RE.search(html)
-    m = CANONICAL_RE.search(html)
-    if m and live:
-        return m.group(1), "live page"
-    # The player response is embedded even when the page shell is minimal.
-    m = VIDEO_DETAILS_RE.search(html)
-    if m and live:
-        return m.group(1), "live page player data"
-    return None, describe(final_url, html)
+# --------------------------------------------------------------------------- API
 
 
-def from_streams_tab(channel_id: str) -> tuple[str | None, str]:
-    """Fallback: first video on the channel's Live tab that carries a LIVE badge."""
-    final_url, html = fetch(f"https://www.youtube.com/channel/{channel_id}/streams")
+def api_live_ids(channel_id: str, current: str) -> tuple[str | None, str]:
+    base = "https://www.googleapis.com/youtube/v3"
+    q = urllib.parse.urlencode(
+        {"part": "id", "channelId": channel_id, "eventType": "live", "type": "video", "maxResults": 10, "key": API_KEY}
+    )
+    ids = [it["id"]["videoId"] for it in fetch_json(f"{base}/search?{q}").get("items", [])]
+    if not ids:
+        return None, "API: no live broadcasts"
+    q = urllib.parse.urlencode(
+        {"part": "status,contentDetails,snippet", "id": ",".join(ids), "key": API_KEY}
+    )
+    ok, rejected = [], []
+    for v in fetch_json(f"{base}/videos?{q}").get("items", []):
+        if v["snippet"].get("liveBroadcastContent") != "live":
+            rejected.append(f"{v['id']}(not live)")
+        elif not v["status"].get("embeddable", False):
+            rejected.append(f"{v['id']}(embedding disabled)")
+        elif v.get("contentDetails", {}).get("contentRating", {}).get("ytRating") == "ytAgeRestricted":
+            rejected.append(f"{v['id']}(age-restricted)")
+        else:
+            ok.append(v["id"])
+    if not ok:
+        return None, "API: no embeddable live stream; rejected " + ", ".join(rejected)
+    # Channels sometimes run several streams; don't flip-flop if ours is still fine.
+    return (current if current in ok else ok[0]), "API"
+
+
+# ---------------------------------------------------------------------- scraping
+
+
+def oembed_ok(video_id: str) -> bool:
+    """oEmbed answers 401/403/404 for videos that can't be embedded."""
+    url = "https://www.youtube.com/oembed?format=json&url=" + urllib.parse.quote(
+        f"https://www.youtube.com/watch?v={video_id}", safe=""
+    )
+    try:
+        fetch(url)
+        return True
+    except urllib.error.HTTPError:
+        return False
+
+
+def scrape_candidates(channel_id: str) -> tuple[list[tuple[str, str]], list[str]]:
+    """Return ([(video_id, page_html_or_empty)], notes)."""
+    cands, notes = [], []
+
+    html = fetch(f"https://www.youtube.com/channel/{channel_id}/live")
+    if BOT_CHECK_MARKER in html or "confirm you're not a bot" in html:
+        notes.append("live page: bot check")
+    if LIVE_FLAG_RE.search(html):
+        m = CANONICAL_RE.search(html)
+        if not m:
+            i = html.find('"videoDetails":{')
+            m = VIDEO_ID_RE.search(html, i, i + 400) if i != -1 else None
+        if m:
+            cands.append((m.group(1), html))
+    if not cands:
+        notes.append("live page: no live video")
+
+    html = fetch(f"https://www.youtube.com/channel/{channel_id}/streams")
     ids = [(m.start(), m.group(1)) for m in VIDEO_ID_RE.finditer(html)]
-    # Split the page into one segment per video (a video's ID repeats inside its
-    # own renderer, so a segment runs until a *different* ID appears).
+    found = False
     for i, (start, vid) in enumerate(ids):
         if i and ids[i - 1][1] == vid:
             continue
         end = next((p for p, v in ids[i + 1:] if v != vid), len(html))
         if any(marker in html[start:end] for marker in LIVE_BADGES):
-            return vid, "streams tab"
-    return None, describe(final_url, html)
+            if vid not in (c for c, _ in cands):
+                cands.append((vid, ""))  # no watch page for this one
+            found = True
+    if not found:
+        notes.append("streams tab: no LIVE badge")
+    return cands, notes
 
 
-def current_live_id(channel_id: str) -> tuple[str | None, str]:
-    vid, why = from_live_page(channel_id)
-    if vid:
-        return vid, why
-    vid2, why2 = from_streams_tab(channel_id)
-    if vid2:
-        return vid2, why2
-    return None, f"live page: {why} | streams: {why2}"
+def scrape_live_id(channel_id: str, current: str) -> tuple[str | None, str]:
+    cands, notes = scrape_candidates(channel_id)
+    ok, rejected = [], []
+    for vid, page in cands:
+        bad = next((mk for mk in UNEMBEDDABLE_MARKERS if mk in page), None)
+        if bad:
+            rejected.append(f"{vid}({bad})")
+        elif not oembed_ok(vid):
+            rejected.append(f"{vid}(oEmbed refused)")
+        else:
+            ok.append(vid)
+    if rejected:
+        notes.append("rejected " + ", ".join(rejected))
+    if not ok:
+        return None, "scrape: " + "; ".join(notes)
+    return (current if current in ok else ok[0]), "scrape"
+
+
+def current_live_id(channel_id: str, current: str) -> tuple[str | None, str]:
+    if API_KEY:
+        return api_live_ids(channel_id, current)
+    return scrape_live_id(channel_id, current)
+
+
+# -------------------------------------------------------------------------- main
 
 
 def main() -> int:
     text = INDEX.read_text(encoding="utf-8")
     changes = []
+    print(f"Mode: {'YouTube Data API' if API_KEY else 'page scraping (set YOUTUBE_API_KEY for reliable results)'}")
 
     def replace(m: re.Match) -> str:
         old_id, channel_id, name = m.group(2), m.group(4), m.group(6)
         try:
-            new_id, how = current_live_id(channel_id)
-        except Exception as e:  # network error, HTTP error, etc.
+            new_id, how = current_live_id(channel_id, old_id)
+        except Exception as e:  # network error, HTTP error, quota, etc.
             print(f"[warn] {name}: lookup failed ({e}); keeping {old_id}")
             return m.group(0)
         if not new_id:
-            print(f"[skip] {name}: no live stream found; keeping {old_id}\n       {how}")
+            print(f"[skip] {name}: keeping {old_id} -- {how}")
             return m.group(0)
         if new_id == old_id:
             print(f"[ok]   {name}: unchanged ({old_id}, via {how})")
             return m.group(0)
         print(f"[new]  {name}: {old_id} -> {new_id} (via {how})")
-        changes.append(f"{name}: {old_id} -> {new_id}")
+        changes.append(name)
         return m.group(1) + new_id + m.group(3) + channel_id + m.group(5)
 
     new_text, count = LINE_RE.subn(replace, text)
@@ -123,7 +202,7 @@ def main() -> int:
         return 1
     if changes:
         INDEX.write_text(new_text, encoding="utf-8")
-        print(f"Updated {len(changes)} channel(s).")
+        print(f"Updated {len(changes)} channel(s): {', '.join(changes)}")
     else:
         print("No changes.")
     return 0

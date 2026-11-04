@@ -24,6 +24,10 @@ jobs:
           python-version: "3.12"
 
       - name: Fetch current live video IDs
+        env:
+          # Optional but recommended: without it the script falls back to page
+          # scraping, which YouTube often blocks from GitHub's runners.
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python3 scripts/update_live_ids.py index.html
 
       - name: Commit and push if changed
