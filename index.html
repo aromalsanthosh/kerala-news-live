@@ -253,6 +253,10 @@
     font:inherit;font-weight:600;color:var(--muted);
     padding:0 4px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
   }
+  .credit{text-align:center;font-size:11.5px;color:var(--muted)}
+  .credit a{color:var(--text);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.2);transition:border-color .15s,color .15s}
+  .credit a:hover{color:#fff;border-color:var(--accent)}
+  .credit a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
   @media (hover:none){.shortcuts{display:none}}
 </style>
 </head>
@@ -420,7 +424,12 @@
   hint.className = "shortcuts";
   hint.innerHTML = `<span><kbd>1</kbd>–<kbd>9</kbd> listen</span><span><kbd>M</kbd> mute</span><span><kbd>Esc</kbd> minimize</span>`;
 
-  footer.append(actions, bmcLink, hint);
+  const credit = document.createElement("div");
+  credit.className = "credit";
+  credit.innerHTML = `Made with <span role="img" aria-label="love">❤️</span> by <a href="https://aromalsanthosh.com" target="_blank" rel="noopener">Aromal</a>`;
+  credit.querySelector("a").addEventListener("click", (e) => e.stopPropagation());
+
+  footer.append(actions, bmcLink, hint, credit);
   audioButtonsContainer.appendChild(footer);
 
   // Mute All button at top
