@@ -618,7 +618,14 @@
 
   // === Visibility / dynamic grid ===
   const hidden = new Set();
-  CHANNELS.forEach((c, i) => { if (c.hidden) hidden.add(i); });
+  // Start with at most 9 tiles (a full 3x3 grid): channels marked hidden,
+  // plus any beyond the first 9 visible ones, start hidden.
+  const DEFAULT_VISIBLE = 9;
+  let shownByDefault = 0;
+  CHANNELS.forEach((c, i) => {
+    if (c.hidden || shownByDefault >= DEFAULT_VISIBLE) hidden.add(i);
+    else shownByDefault++;
+  });
 
   function computeGridShape(n) {
     // Returns {cols, rows} for n visible tiles
