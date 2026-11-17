@@ -100,6 +100,23 @@
   }
   .tile iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 
+  /* Shown over a tile whose channel blocks embedding on this site */
+  .tile-blocked{
+    position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;padding:16px;text-align:center;color:#eceef3;
+    background:radial-gradient(circle at 50% 35%,#1c1f29 0%,#0b0c10 75%);
+    font-family:"Inter",system-ui,sans-serif;
+  }
+  .tb-name{font-size:clamp(15px,1.6vw,20px);font-weight:700;letter-spacing:-.01em}
+  .tb-msg{max-width:340px;font-size:clamp(11.5px,1vw,13px);line-height:1.45;color:#8b91a1}
+  .tb-btn{
+    display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;
+    background:#e5222f;color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;transition:filter .15s;
+  }
+  .tb-btn:hover{filter:brightness(1.1)}
+  .tb-btn .icon{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .tb-note{font-size:11px;color:#5d6272}
+
   /* === Audio panel === */
   :root{
     --panel-bg:rgba(15,16,22,.84);
@@ -691,9 +708,15 @@
           if (hidden.has(i)) e.target.pauseVideo();
         },
         // Video removed/unembeddable/recording unavailable
-        'onError': () => switchToChannelLive(i),
+        'onError': (e) => {
+          if (usingChannelFallback.has(i)) showBlocked(i, e.data); // the fallback failed too
+          else switchToChannelLive(i);
+        },
         // A live stream that ends fires ENDED
-        'onStateChange': (e) => { if (e.data === YT.PlayerState.ENDED) switchToChannelLive(i); }
+        'onStateChange': (e) => {
+          if (e.data === YT.PlayerState.ENDED) switchToChannelLive(i);
+          if (e.data === YT.PlayerState.PLAYING) clearBlocked(i);
+        }
       }
     });
   }
@@ -706,6 +729,46 @@
     players[i] = undefined;
     const iframe = document.getElementById(`player-${i}`);
     iframe.src = embedSrc(`live_stream?channel=${channel}`, hidden.has(i) ? 0 : 1);
+    attachPlayer(i);
+  }
+
+  // Some channels only allow their streams on websites they've approved
+  // ("Video unavailable on this domain"). Say so on the tile instead of
+  // leaving YouTube's error screen, and retry now and then in case the
+  // channel switches to a stream that does allow embedding.
+  const BLOCK_RETRY_MS = 10 * 60 * 1000;
+  const blockTimers = {};
+  function showBlocked(i, code) {
+    const tile = document.getElementById(`tile-${i}`);
+    if (!tile || tile.querySelector(".tile-blocked")) return;
+    const c = CHANNELS[i];
+    const ov = document.createElement("div");
+    ov.className = "tile-blocked";
+    ov.innerHTML = `
+      <div class="tb-name"></div>
+      <div class="tb-msg">This channel isn't allowing its live stream to play on other websites right now.</div>
+      <a class="tb-btn" target="_blank" rel="noopener">Watch on YouTube<svg class="icon" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>
+      <div class="tb-note">Retrying automatically</div>`;
+    ov.querySelector(".tb-name").textContent = c.name;
+    ov.querySelector(".tb-btn").href = c.channel
+      ? `https://www.youtube.com/channel/${c.channel}/live`
+      : `https://www.youtube.com/watch?v=${VIDEOS[i]}`;
+    ov.title = `YouTube error ${code}`;
+    tile.appendChild(ov);
+    clearTimeout(blockTimers[i]);
+    blockTimers[i] = setTimeout(() => retryBlocked(i), BLOCK_RETRY_MS);
+  }
+  function clearBlocked(i) {
+    clearTimeout(blockTimers[i]);
+    document.getElementById(`tile-${i}`)?.querySelector(".tile-blocked")?.remove();
+  }
+  function retryBlocked(i) {
+    // Start over from the pinned video; on error it falls back to the
+    // channel's live stream again, then shows the message if that fails too.
+    usingChannelFallback.delete(i);
+    clearBlocked(i);
+    players[i] = undefined;
+    document.getElementById(`player-${i}`).src = embedSrc(VIDEOS[i], hidden.has(i) ? 0 : 1);
     attachPlayer(i);
   }
 
