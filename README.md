@@ -8,7 +8,7 @@ Malayalam news coverage (especially during elections, breaking news, budgets, et
 
 ## Features
 
-- **Multi-stream grid** — watch 9+ Malayalam news channels (24, Asianet, Reporter, Big TV, Manorama, Janam, Media One, Kairali, News Malayalam 24x7) concurrently, plus Mathrubhumi (hidden by default while the channel blocks its live stream from playing on other websites — enable it with the eye button and hide another channel to keep a 3×3 grid).
+- **Multi-stream grid** — watch 9+ Malayalam news channels (24, Asianet, Reporter, Big TV, Manorama, Janam, Media One, Kairali, News Malayalam 24x7) concurrently. Mathrubhumi, News18 Kerala and Jaihind News are also available but hidden by default — enable any of them with the eye button (and hide another channel to keep a 3×3 grid). Mathrubhumi is hidden while it has no embeddable live stream.
 - **Responsive auto-layout** — grid shape adapts to the number of visible tiles (1×1, 2×1, 2×2, 3×2, 3×3, 4×3, …) and fits the viewport with no scrolling on desktop/tablet; stacks vertically on mobile.
 - **Single-audio focus** — all streams start muted; click a channel (or press `1`–`9`) to unmute just that one; click it again to mute. The playing channel shows an animated equalizer and its tile gets a green border.
 - **Mute all** — press `0` or `M`, or use the "Mute All" button.

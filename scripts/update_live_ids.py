@@ -53,6 +53,7 @@ UNEMBEDDABLE_MARKERS = (
     "AGE_CHECK_REQUIRED",
     '"playableInEmbed":false',
 )
+ALWAYS_ON_RE = re.compile(r"24\s*[x×/*]\s*7|live\s*tv", re.I)
 BOT_CHECK_MARKER = "confirm you’re not a bot"
 
 HEADERS = {
@@ -88,8 +89,9 @@ def api_live_ids(channel_id: str, current: str) -> tuple[str | None, str]:
     q = urllib.parse.urlencode(
         {"part": "status,contentDetails,snippet", "id": ",".join(ids), "key": API_KEY}
     )
-    ok, rejected = [], []
+    ok, rejected, titles = [], [], {}
     for v in fetch_json(f"{base}/videos?{q}").get("items", []):
+        titles[v["id"]] = v["snippet"].get("title", "")
         if v["snippet"].get("liveBroadcastContent") != "live":
             rejected.append(f"{v['id']}(not live)")
         elif not v["status"].get("embeddable", False):
@@ -101,7 +103,12 @@ def api_live_ids(channel_id: str, current: str) -> tuple[str | None, str]:
     if not ok:
         return None, "API: no embeddable live stream; rejected " + ", ".join(rejected)
     # Channels sometimes run several streams; don't flip-flop if ours is still fine.
-    return (current if current in ok else ok[0]), "API"
+    if current in ok:
+        return current, "API"
+    # Otherwise prefer the channel's round-the-clock stream over one-off
+    # breaking-news streams (e.g. News18 Kerala runs several at once).
+    always_on = [v for v in ok if ALWAYS_ON_RE.search(titles.get(v, ""))]
+    return (always_on or ok)[0], "API"
 
 
 # ---------------------------------------------------------------------- scraping
